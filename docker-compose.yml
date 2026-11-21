@@ -1,0 +1,253 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# QuickBite — the whole system in one compose file.
+#
+#   docker compose up -d --build      (from this folder)
+#
+# Each service keeps its own Dockerfile and .env (app settings, secrets).
+# This file only adds what lives *between* services: shared infrastructure,
+# the network they talk over, and the connection settings that differ inside
+# Docker (hosts are service names, not localhost).
+#
+# Per-service docker-compose.yml files still exist for working on one service
+# in isolation. Don't run them at the same time as this one (host ports clash).
+#
+#   core-service       http://localhost:3000/api      (Node/TS, Postgres+PostGIS, Redis)
+#   order-service      http://localhost:4000/api      (Node/TS, 4 Postgres DBs, Redis, WS)
+#   analytics-service  http://localhost:4002          (Go, MongoDB)
+#   RabbitMQ admin     http://localhost:15673
+# ─────────────────────────────────────────────────────────────────────────────
+name: quickbite
+
+# ── Shared connection settings, one block per service (YAML anchors) ────────
+x-rabbit-url: &rabbit-url amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+
+# One image per service, reused by its api/worker/migrate containers: only the
+# api container has `build:`; siblings run the same image and never pull it
+# (pull_policy: never → no lookup on Docker Hub for a "quickbite/..." image).
+x-core-app: &core-app
+  image: quickbite/core-service
+  pull_policy: never
+  env_file: ./core-services/.env
+  environment:
+    DB_HOST: postgres
+    DB_PORT: "5432"
+    DB_USER: core_service
+    DB_PASSWORD: ${CORE_DB_PASSWORD}
+    DB_NAME: quickbite_core
+    DB_MIGRATIONS_DIRECTORY: dist/migrations
+    DB_MIGRATIONS_EXTENSION: js
+    DB_SSL: "false"
+    REDIS_HOST: core-redis
+    REDIS_PORT: "6379"
+    RABBITMQ_URL: *rabbit-url
+
+x-order-app: &order-app
+  image: quickbite/order-service
+  pull_policy: never
+  env_file: ./order-service/.env
+  environment:
+    DB_eg_HOST: postgres
+    DB_eg_PORT: "5432"
+    DB_eg_USERNAME: order_service
+    DB_eg_PASSWORD: ${ORDER_DB_PASSWORD}
+    DB_eg_NAME: order_service_eg
+    DB_ksa_HOST: postgres
+    DB_ksa_PORT: "5432"
+    DB_ksa_USERNAME: order_service
+    DB_ksa_PASSWORD: ${ORDER_DB_PASSWORD}
+    DB_ksa_NAME: order_service_ksa
+    ARCHIVE_DB_eg_HOST: postgres
+    ARCHIVE_DB_eg_PORT: "5432"
+    ARCHIVE_DB_eg_USERNAME: order_service
+    ARCHIVE_DB_eg_PASSWORD: ${ORDER_DB_PASSWORD}
+    ARCHIVE_DB_eg_NAME: order_service_archive_eg
+    ARCHIVE_DB_ksa_HOST: postgres
+    ARCHIVE_DB_ksa_PORT: "5432"
+    ARCHIVE_DB_ksa_USERNAME: order_service
+    ARCHIVE_DB_ksa_PASSWORD: ${ORDER_DB_PASSWORD}
+    ARCHIVE_DB_ksa_NAME: order_service_archive_ksa
+    DB_MIGRATION_DIRECTORY: dist/migrations
+    DB_MIGRATION_EXTENSION: js
+    DB_SSL: "false"
+    REDIS_HOST: order-redis
+    REDIS_PORT: "6379"
+    RABBITMQ_URL: *rabbit-url
+    # Synchronous service-to-service call: by service name on the Docker network.
+    CORE_SERVICE_BASE_URL: http://core-service:3000
+
+x-healthy: &healthy
+  condition: service_healthy
+
+services:
+  # ══════════════════════════ Shared infrastructure ══════════════════════════
+
+  # One Postgres server, separate databases + users per service (see init script).
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      CORE_DB_PASSWORD: ${CORE_DB_PASSWORD}
+      ORDER_DB_PASSWORD: ${ORDER_DB_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init/01-create-databases.sh:/docker-entrypoint-initdb.d/01-create-databases.sh:ro
+    healthcheck:
+      # TCP check: the first-boot init server is socket-only and would pass too early.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres"]
+      interval: 10s
+      retries: 10
+
+  # Analytics' database. Single-node replica set → transactions → exactly-once.
+  mongo:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { rs.status() } catch (e) { rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'mongo:27017'}]}) }; quit(db.hello().isWritablePrimary ? 0 : 1)"
+      interval: 10s
+      retries: 10
+      start_period: 10s
+
+  # Redis per service: both use keys like `idempotency:<key>`, so a shared
+  # instance would let one service read/overwrite the other's entries.
+  # Not published to the host — only the owning service needs it.
+  core-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 10
+
+  order-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 10
+
+  # THE shared piece: the event bus every service publishes to / consumes from.
+  #   core.events  : core  → order, analytics
+  #   order.events : order → analytics
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 10
+
+  # ══════════════════════════════ core-service ═══════════════════════════════
+
+  core-migrate:
+    <<: *core-app
+    # Same command as the production core-migrate task.
+    command: ["npm", "run", "migrate:prod"]
+    depends_on:
+      postgres: *healthy
+
+  core-service:
+    <<: *core-app
+    build: ./core-services
+    pull_policy: build
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      retries: 5
+    depends_on:
+      core-migrate:
+        condition: service_completed_successfully
+      core-redis: *healthy
+
+  core-worker:
+    <<: *core-app
+    restart: unless-stopped
+    command: ["node", "dist/worker.js"]
+    depends_on:
+      core-migrate:
+        condition: service_completed_successfully
+      core-redis: *healthy
+      rabbitmq: *healthy
+
+  # ══════════════════════════════ order-service ══════════════════════════════
+
+  # Every region × (hot, archive) — same command as the production order-migrate task.
+  order-migrate:
+    <<: *order-app
+    command: ["npm", "run", "migrate:all:prod"]
+    depends_on:
+      postgres: *healthy
+
+  order-service:
+    <<: *order-app
+    build: ./order-service
+    pull_policy: build
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/api/health"]
+      interval: 10s
+      retries: 5
+    depends_on:
+      order-migrate:
+        condition: service_completed_successfully
+      order-redis: *healthy
+      rabbitmq: *healthy
+
+  order-worker:
+    <<: *order-app
+    restart: unless-stopped
+    command: ["node", "dist/worker.js"]
+    depends_on:
+      order-migrate:
+        condition: service_completed_successfully
+      order-redis: *healthy
+      rabbitmq: *healthy
+
+  # ════════════════════════════ analytics-service ════════════════════════════
+
+  analytics-service:
+    build: ./analytics-service
+    image: quickbite/analytics-service
+    pull_policy: build
+    restart: unless-stopped
+    env_file: ./analytics-service/.env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/?directConnection=true
+      RABBITMQ_URL: *rabbit-url
+      CORE_SERVICE_BASE_URL: http://core-service:3000
+    ports:
+      - "4002:4002"
+    depends_on:
+      mongo: *healthy
+      rabbitmq: *healthy
+
+volumes:
+  postgres-data:
+  mongo-data:
+  rabbitmq-data:
