@@ -154,9 +154,9 @@ The script mints HS256 access tokens in-script, using the same claim shape the s
 
 | Service | Stack | Owns | Repo |
 |---|---|---|---|
-| **core-service** | Node.js · TypeScript · Express 5 · Knex · PostgreSQL + PostGIS · Redis | Users & auth, restaurants, branches, menus, stock, RBAC, addresses, media | [quickbite_core_service](https://github.com/markisaac1812/quickbite_core_service) |
-| **order-service** | Node.js · TypeScript · Express 5 · Knex · sharded PostgreSQL · Redis · socket.io | Orders, payments, deliveries, agents, restaurant finance, real-time updates | [quickbite_order_service](https://github.com/markisaac1812/quickbite_order_service) |
-| **analytics-service** | Go · chi · mongo-driver · amqp091 | Per-day sales, delivery and failure rollups for restaurants and the platform | [quickbite_analytics_service](https://github.com/markisaac1812/quickbite_analytics_service) |
+| **core-service** | Node.js · TypeScript · Express 5 · Knex · PostgreSQL + PostGIS · Redis | Users & auth, restaurants, branches, menus, stock, RBAC, addresses, media | [sufra_core_service](https://github.com/markisaac1812/quickbite_core_service) |
+| **order-service** | Node.js · TypeScript · Express 5 · Knex · sharded PostgreSQL · Redis · socket.io | Orders, payments, deliveries, agents, restaurant finance, real-time updates | [sufra_order_service](https://github.com/markisaac1812/quickbite_order_service) |
+| **analytics-service** | Go · chi · mongo-driver · amqp091 | Per-day sales, delivery and failure rollups for restaurants and the platform | [sufra_analytics_service](https://github.com/markisaac1812/quickbite_analytics_service) |
 
 <details>
 <summary><b>core-service: the catalogue and identity service</b></summary>
