@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1000" viewBox="0 0 1400 1000" role="img" aria-labelledby="t d">
-  <title id="t">QuickBite AWS architecture</title>
+  <title id="t">Sufra AWS architecture</title>
   <desc id="d">Clients reach one internet-facing Application Load Balancer that path-routes to three ECS Fargate services in private subnets: core-service, order-service and analytics-service, plus two outbox worker services. Core uses RDS PostgreSQL with PostGIS; order uses four RDS PostgreSQL shards (Egypt, Saudi Arabia, and an archive for each); both use ElastiCache Redis. Workers publish events to Amazon MQ (RabbitMQ), which analytics consumes into DocumentDB. Images come from ECR via GitHub Actions with OIDC; secrets and logs go through VPC interface endpoints.</desc>
   <defs>
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -27,7 +27,7 @@
   <rect width="1400" height="1000" rx="16" fill="#0d1117"/>
 
   <!-- Title -->
-  <text x="40" y="50" fill="#e6edf3" font-size="24" font-weight="800">QuickBite on AWS</text>
+  <text x="40" y="50" fill="#e6edf3" font-size="24" font-weight="800">Sufra on AWS</text>
   <text x="40" y="74" class="s" font-size="13">Production topology used for the load test. Region eu-north-1 · 2 Availability Zones · all compute and data private</text>
 
   <!-- Legend -->

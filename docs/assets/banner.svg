@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-labelledby="t d">
-  <title id="t">QuickBite</title>
-  <desc id="d">QuickBite: a production-grade food-delivery backend with three microservices, deployed on AWS ECS Fargate and load-tested at 643 requests per second.</desc>
+  <title id="t">Sufra</title>
+  <desc id="d">Sufra: a production-grade food-delivery backend with three microservices, deployed on AWS ECS Fargate and load-tested at 643 requests per second.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0d1117"/>
@@ -31,7 +31,8 @@
   <!-- Title block -->
   <g class="sans">
     <text x="64" y="92" fill="#8b949e" font-size="15" font-weight="600" letter-spacing="2.5">DISTRIBUTED BACKEND · AWS · LOAD-TESTED</text>
-    <text x="62" y="160" fill="#e6edf3" font-size="72" font-weight="800" letter-spacing="-2">Quick<tspan fill="#3987e5">Bite</tspan></text>
+    <text x="62" y="160" fill="#e6edf3" font-size="72" font-weight="800" letter-spacing="-1.5">Sufra<tspan fill="#3987e5">.</tspan></text>
+    <text x="290" y="156" fill="#3987e5" font-size="40" font-weight="700" font-family="'Segoe UI','Noto Sans Arabic','Geeza Pro',Tahoma,sans-serif" opacity="0.9">سفرة</text>
     <text x="64" y="200" fill="#c9d1d9" font-size="21">A food-delivery platform backend built from three microservices:</text>
     <text x="64" y="228" fill="#c9d1d9" font-size="21">region-sharded orders, event-driven analytics, real-time delivery.</text>
   </g>

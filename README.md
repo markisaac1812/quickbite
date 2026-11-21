@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/banner.svg" alt="QuickBite: a food-delivery backend built from three microservices, deployed on AWS and load-tested at 643 req/s" width="100%"/>
+<img src="docs/assets/banner.svg" alt="Sufra: a food-delivery backend built from three microservices, deployed on AWS and load-tested at 643 req/s" width="100%"/>
 
 <br/>
 
@@ -22,9 +22,9 @@
 
 ---
 
-## What is QuickBite?
+## What is Sufra?
 
-QuickBite is the backend for a food-delivery platform, similar in scope to Talabat or Uber Eats. It serves four kinds of users: **customers** browse menus and order food, **restaurants** manage menus and process orders, **delivery agents** pick up and deliver, and **admins** run the platform. The platform runs in two countries, **Egypt (EGP)** and **Saudi Arabia (SAR)**.
+**Sufra** (سفرة, Arabic for a shared dining spread) is the backend for a food-delivery platform, similar in scope to Talabat or Uber Eats. It serves four kinds of users: **customers** browse menus and order food, **restaurants** manage menus and process orders, **delivery agents** pick up and deliver, and **admins** run the platform. The platform runs in two countries, **Egypt (EGP)** and **Saudi Arabia (SAR)**.
 
 It is built as **three independently deployable microservices** in two languages. The full stack was deployed to **AWS ECS Fargate** and seeded with **1M users and 1.4M orders**. It then took a **~10-minute open-model load test of 374,400 requests with exactly one failure**.
 
@@ -42,7 +42,7 @@ It is built as **three independently deployable microservices** in two languages
 
 ## 🏗 Architecture
 
-<img src="docs/assets/architecture.svg" alt="QuickBite AWS architecture: ALB path-routes to core, order and analytics ECS services in private subnets, backed by RDS PostgreSQL, ElastiCache, Amazon MQ and DocumentDB" width="100%"/>
+<img src="docs/assets/architecture.svg" alt="Sufra AWS architecture: ALB path-routes to core, order and analytics ECS services in private subnets, backed by RDS PostgreSQL, ElastiCache, Amazon MQ and DocumentDB" width="100%"/>
 
 **How a request moves through the system:**
 
