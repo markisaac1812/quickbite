@@ -1,2 +1,4 @@
 .env
-infra/
+core-services/
+order-service/
+analytics-service/
