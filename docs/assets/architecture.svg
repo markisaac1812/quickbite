@@ -1,0 +1,275 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1000" viewBox="0 0 1400 1000" role="img" aria-labelledby="t d">
+  <title id="t">QuickBite AWS architecture</title>
+  <desc id="d">Clients reach one internet-facing Application Load Balancer that path-routes to three ECS Fargate services in private subnets: core-service, order-service and analytics-service, plus two outbox worker services. Core uses RDS PostgreSQL with PostGIS; order uses four RDS PostgreSQL shards (Egypt, Saudi Arabia, and an archive for each); both use ElastiCache Redis. Workers publish events to Amazon MQ (RabbitMQ), which analytics consumes into DocumentDB. Images come from ECR via GitHub Actions with OIDC; secrets and logs go through VPC interface endpoints.</desc>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8b949e"/>
+    </marker>
+    <marker id="ahB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#3987e5"/></marker>
+    <marker id="ahO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d95926"/></marker>
+    <marker id="ahV" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#9085e9"/></marker>
+    <marker id="ahA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#199e70"/></marker>
+    <style>
+      text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+      .mono{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+      .h{fill:#e6edf3;font-size:14px;font-weight:700}
+      .s{fill:#8b949e;font-size:11.5px}
+      .lbl{fill:#8b949e;font-size:11px;font-weight:600;letter-spacing:1.2px}
+      .edge{fill:#c9d1d9;font-size:10.5px}
+      .card{fill:#161b22;stroke:#30363d;stroke-width:1}
+      .flow{stroke-dasharray:5 7;animation:dash 1.2s linear infinite}
+      .flow.slow{animation-duration:2.2s}
+      @keyframes dash{to{stroke-dashoffset:-24}}
+      @media (prefers-reduced-motion: reduce){.flow{animation:none}}
+    </style>
+  </defs>
+
+  <rect width="1400" height="1000" rx="16" fill="#0d1117"/>
+
+  <!-- Title -->
+  <text x="40" y="50" fill="#e6edf3" font-size="24" font-weight="800">QuickBite on AWS</text>
+  <text x="40" y="74" class="s" font-size="13">Production topology used for the load test. Region eu-north-1 · 2 Availability Zones · all compute and data private</text>
+
+  <!-- Legend -->
+  <g transform="translate(905 34)">
+    <line x1="0" y1="8" x2="30" y2="8" stroke="#3987e5" stroke-width="2"/><text x="38" y="12" class="edge">HTTP request</text>
+    <line x1="130" y1="8" x2="160" y2="8" stroke="#199e70" stroke-width="2" stroke-dasharray="5 4"/><text x="168" y="12" class="edge">event (AMQP)</text>
+    <line x1="270" y1="8" x2="300" y2="8" stroke="#8b949e" stroke-width="1.5"/><text x="308" y="12" class="edge">data access</text>
+    <line x1="0" y1="32" x2="30" y2="32" stroke="#d95926" stroke-width="2"/><text x="38" y="36" class="edge">service → service (sync)</text>
+    <line x1="200" y1="32" x2="230" y2="32" stroke="#9085e9" stroke-width="2"/><text x="238" y="36" class="edge">CI/CD &amp; platform</text>
+  </g>
+
+  <!-- ===== External actors (left) ===== -->
+  <g transform="translate(30 250)">
+    <rect width="170" height="150" rx="12" class="card"/>
+    <text x="16" y="28" class="h">Clients</text>
+    <text x="16" y="52" class="s">Customer app</text>
+    <text x="16" y="72" class="s">Restaurant dashboard</text>
+    <text x="16" y="92" class="s">Delivery-agent app</text>
+    <text x="16" y="112" class="s">Admin console</text>
+    <text x="16" y="136" class="s mono" font-size="10.5">REST + WebSocket</text>
+  </g>
+  <g transform="translate(30 430)">
+    <rect width="170" height="70" rx="12" class="card"/>
+    <text x="16" y="28" class="h">k6 · Grafana Cloud</text>
+    <text x="16" y="50" class="s">10 scenarios · ~625 req/s</text>
+  </g>
+  <g transform="translate(30 720)">
+    <rect width="170" height="80" rx="12" class="card"/>
+    <text x="16" y="28" class="h">Kashier</text>
+    <text x="16" y="48" class="s">Payment provider (v3)</text>
+    <text x="16" y="66" class="s">sessions + HMAC webhook</text>
+  </g>
+  <g transform="translate(30 110)">
+    <rect width="170" height="96" rx="12" class="card" stroke="#9085e9"/>
+    <text x="16" y="28" class="h">GitHub Actions</text>
+    <text x="16" y="48" class="s">test → build → push</text>
+    <text x="16" y="66" class="s">→ migrate → roll ECS</text>
+    <text x="16" y="84" class="s mono" font-size="10.5">OIDC, no static keys</text>
+  </g>
+
+  <!-- ===== AWS Cloud ===== -->
+  <rect x="230" y="100" width="1145" height="875" rx="14" fill="none" stroke="#c98500" stroke-opacity="0.55" stroke-dasharray="2 0"/>
+  <text x="248" y="124" class="lbl" fill="#c98500" style="fill:#c98500">AWS CLOUD · EU-NORTH-1</text>
+
+  <!-- Regional services row -->
+  <g transform="translate(470 138)">
+    <rect width="150" height="56" rx="10" class="card"/>
+    <text x="14" y="24" class="h" font-size="13">Amazon ECR</text>
+    <text x="14" y="42" class="s">3 image repos · scan on push</text>
+  </g>
+  <g transform="translate(636 138)">
+    <rect width="168" height="56" rx="10" class="card"/>
+    <text x="14" y="24" class="h" font-size="13">Secrets Manager</text>
+    <text x="14" y="42" class="s">DB, JWT, MQ, Kashier keys</text>
+  </g>
+  <g transform="translate(820 138)">
+    <rect width="160" height="56" rx="10" class="card"/>
+    <text x="14" y="24" class="h" font-size="13">CloudWatch Logs</text>
+    <text x="14" y="42" class="s">/ecs/* · Logs Insights</text>
+  </g>
+  <g transform="translate(996 138)">
+    <rect width="150" height="56" rx="10" class="card"/>
+    <text x="14" y="24" class="h" font-size="13">Amazon S3</text>
+    <text x="14" y="42" class="s">media · presigned URLs</text>
+  </g>
+  <g transform="translate(1162 138)">
+    <rect width="190" height="56" rx="10" class="card"/>
+    <text x="14" y="24" class="h" font-size="13">Cloud Map</text>
+    <text x="14" y="42" class="s">Service Connect namespace</text>
+  </g>
+
+  <!-- ===== VPC ===== -->
+  <rect x="250" y="218" width="1105" height="738" rx="12" fill="#3987e5" fill-opacity="0.025" stroke="#3987e5" stroke-opacity="0.5"/>
+  <text x="268" y="242" class="lbl" style="fill:#3987e5">VPC · 2 AZs · 4 interface endpoints (ECR api/dkr, Secrets, Logs) + S3 gateway</text>
+
+  <!-- Public subnet -->
+  <rect x="268" y="258" width="200" height="680" rx="10" fill="#199e70" fill-opacity="0.04" stroke="#199e70" stroke-opacity="0.45"/>
+  <text x="284" y="280" class="lbl" style="fill:#199e70">PUBLIC SUBNETS</text>
+
+  <g transform="translate(284 300)">
+    <rect width="168" height="260" rx="12" fill="#161b22" stroke="#3987e5" stroke-width="1.5"/>
+    <text x="14" y="28" class="h">Application LB</text>
+    <text x="14" y="46" class="s">internet-facing · path rules</text>
+    <line x1="14" y1="58" x2="154" y2="58" stroke="#30363d"/>
+    <text x="14" y="80" class="edge mono" font-size="10">/api/v1/*</text>
+    <text x="14" y="94" class="s" font-size="10.5">→ analytics-tg</text>
+    <text x="14" y="118" class="edge mono" font-size="10">/api/orders*  /ws*</text>
+    <text x="14" y="132" class="edge mono" font-size="10">/api/customer/orders*</text>
+    <text x="14" y="146" class="edge mono" font-size="10">/api/agents/* …</text>
+    <text x="14" y="160" class="s" font-size="10.5">→ order-tg</text>
+    <text x="14" y="184" class="edge mono" font-size="10">default (*)</text>
+    <text x="14" y="198" class="s" font-size="10.5">→ core-tg</text>
+    <line x1="14" y1="212" x2="154" y2="212" stroke="#30363d"/>
+    <text x="14" y="232" class="s" font-size="10.5">health: /api/health,</text>
+    <text x="14" y="247" class="s" font-size="10.5">/health → 200</text>
+  </g>
+  <g transform="translate(284 730)">
+    <rect width="168" height="64" rx="12" class="card"/>
+    <text x="14" y="28" class="h">NAT Gateway</text>
+    <text x="14" y="46" class="s">egress to Kashier</text>
+  </g>
+
+  <!-- Private app subnet -->
+  <rect x="490" y="258" width="400" height="680" rx="10" fill="#d95926" fill-opacity="0.03" stroke="#d95926" stroke-opacity="0.4"/>
+  <text x="506" y="280" class="lbl" style="fill:#d95926">PRIVATE SUBNETS · ECS FARGATE · quickbite-1</text>
+
+  <!-- core-service -->
+  <g transform="translate(560 298)">
+    <rect width="310" height="92" rx="12" fill="#161b22" stroke="#3987e5" stroke-width="1.5"/>
+    <text x="16" y="28" class="h">core-service <tspan class="s" font-weight="400">· Node.js / TS</tspan></text>
+    <text x="16" y="48" class="s">auth · users · restaurants · branches · menus</text>
+    <text x="16" y="66" class="s">RBAC · addresses · media · stock reserve</text>
+    <text x="16" y="84" class="s mono" font-size="10.5">2–6 tasks · CPU target 60%</text>
+  </g>
+  <g transform="translate(560 400)">
+    <rect width="310" height="44" rx="10" class="card"/>
+    <text x="16" y="20" class="h" font-size="12.5">core-worker</text>
+    <text x="16" y="36" class="s">outbox relay → core.events (croner)</text>
+  </g>
+
+  <!-- order-service -->
+  <g transform="translate(560 498)">
+    <rect width="310" height="110" rx="12" fill="#161b22" stroke="#d95926" stroke-width="1.5"/>
+    <text x="16" y="28" class="h">order-service <tspan class="s" font-weight="400">· Node.js / TS</tspan></text>
+    <text x="16" y="48" class="s">orders · payments · deliveries · agents</text>
+    <text x="16" y="66" class="s">restaurant finance · socket.io (/ws)</text>
+    <text x="16" y="84" class="s">region shard router (X-Region: eg | ksa)</text>
+    <text x="16" y="102" class="s mono" font-size="10.5">2–6 tasks · CPU target 60%</text>
+  </g>
+  <g transform="translate(560 618)">
+    <rect width="310" height="44" rx="10" class="card"/>
+    <text x="16" y="20" class="h" font-size="12.5">order-worker</text>
+    <text x="16" y="36" class="s">outbox relay → order.events · archival cron</text>
+  </g>
+
+  <!-- analytics -->
+  <g transform="translate(560 720)">
+    <rect width="310" height="92" rx="12" fill="#161b22" stroke="#9085e9" stroke-width="1.5"/>
+    <text x="16" y="28" class="h">analytics-service <tspan class="s" font-weight="400">· Go</tspan></text>
+    <text x="16" y="48" class="s">HTTP API + RabbitMQ consumers, one binary</text>
+    <text x="16" y="66" class="s">per-day rollups · exactly-once applies</text>
+    <text x="16" y="84" class="s mono" font-size="10.5">2–6 tasks · CPU target 60%</text>
+  </g>
+
+  <!-- Service connect sync arrow (order -> core) -->
+  <path d="M530 553 L530 344 L556 344" fill="none" stroke="#d95926" stroke-width="2" marker-end="url(#ahO)" class="flow"/>
+  <text x="560" y="466" class="edge">↑ sync via Service Connect</text>
+  <text x="560" y="482" class="edge mono" font-size="10">http://core-service:3000</text>
+  <path d="M556 553 L530 553" fill="none" stroke="#d95926" stroke-width="2"/>
+  <!-- analytics -> core RBAC -->
+  <path d="M560 790 L512 790 L512 380" fill="none" stroke="#d95926" stroke-width="1.5" stroke-dasharray="3 4" opacity="0.7"/>
+  <text x="560" y="846" class="edge">analytics → core: RBAC lookups (internal API key)</text>
+  <text x="560" y="864" class="edge">order → core: branch, price, address, reserve-stock</text>
+  <text x="560" y="900" class="s">Workers have no LB · Service Connect client-only</text>
+  <text x="560" y="918" class="s">Rolling deploys gated on ALB health checks → zero downtime</text>
+
+  <!-- Private data subnet -->
+  <rect x="912" y="258" width="425" height="680" rx="10" fill="#9085e9" fill-opacity="0.03" stroke="#9085e9" stroke-opacity="0.4"/>
+  <text x="928" y="280" class="lbl" style="fill:#9085e9">PRIVATE SUBNETS · DATA (SG: ecs-sg only)</text>
+
+  <!-- RDS core -->
+  <g transform="translate(960 298)">
+    <rect width="360" height="62" rx="12" class="card"/>
+    <text x="16" y="26" class="h">RDS PostgreSQL · core</text>
+    <text x="16" y="46" class="s">PostGIS geo search · events_outbox · SSL</text>
+  </g>
+  <!-- Redis -->
+  <g transform="translate(960 374)">
+    <rect width="360" height="62" rx="12" class="card"/>
+    <text x="16" y="26" class="h">ElastiCache (Redis/Valkey)</text>
+    <text x="16" y="46" class="s">read-through cache · idempotency · GEO presence · WS pub/sub</text>
+  </g>
+  <!-- Order shards -->
+  <g transform="translate(960 450)">
+    <rect width="360" height="168" rx="12" class="card"/>
+    <text x="16" y="26" class="h">RDS PostgreSQL · order shards ×4</text>
+    <text x="16" y="45" class="s">shard key = country · orders partitioned monthly</text>
+    <g transform="translate(16 60)">
+      <rect width="76" height="44" rx="8" fill="#0d1117" stroke="#d95926"/>
+      <text x="38" y="19" text-anchor="middle" class="h" font-size="12">eg</text>
+      <text x="38" y="34" text-anchor="middle" class="s" font-size="10">hot · EGP</text>
+      <rect x="86" width="76" height="44" rx="8" fill="#0d1117" stroke="#d95926"/>
+      <text x="124" y="19" text-anchor="middle" class="h" font-size="12">ksa</text>
+      <text x="124" y="34" text-anchor="middle" class="s" font-size="10">hot · SAR</text>
+      <rect x="172" width="76" height="44" rx="8" fill="#0d1117" stroke="#30363d" stroke-dasharray="4 3"/>
+      <text x="210" y="19" text-anchor="middle" class="h" font-size="12">eg</text>
+      <text x="210" y="34" text-anchor="middle" class="s" font-size="10">archive</text>
+      <rect x="258" width="76" height="44" rx="8" fill="#0d1117" stroke="#30363d" stroke-dasharray="4 3"/>
+      <text x="296" y="19" text-anchor="middle" class="h" font-size="12">ksa</text>
+      <text x="296" y="34" text-anchor="middle" class="s" font-size="10">archive</text>
+    </g>
+    <text x="16" y="135" class="s">hot = current year · archive = prior years</text>
+    <text x="16" y="153" class="s">money as INT minor units · SELECT … FOR UPDATE ledger</text>
+  </g>
+  <!-- RabbitMQ -->
+  <g transform="translate(960 632)">
+    <rect width="360" height="96" rx="12" fill="#161b22" stroke="#199e70" stroke-width="1.5"/>
+    <text x="16" y="26" class="h">Amazon MQ · RabbitMQ <tspan class="s" font-weight="400">(amqps :5671)</tspan></text>
+    <text x="16" y="48" class="s mono" font-size="10.5">core.events  → order, analytics</text>
+    <text x="16" y="66" class="s mono" font-size="10.5">order.events → analytics</text>
+    <text x="16" y="84" class="s">topic exchanges · DLX + DLQ per consumer</text>
+  </g>
+  <!-- DocumentDB -->
+  <g transform="translate(960 742)">
+    <rect width="360" height="70" rx="12" class="card"/>
+    <text x="16" y="26" class="h">Amazon DocumentDB</text>
+    <text x="16" y="46" class="s">agg_*_day rollups · order_timelines · event_ids</text>
+    <text x="16" y="62" class="s">TLS · bundled RDS CA</text>
+  </g>
+  <text x="960" y="846" class="s">Every data-store security group admits only ecs-sg.</text>
+  <text x="960" y="864" class="s">Seeded via a temporary bastion: 1M users, 1.4M orders.</text>
+
+  <!-- ===== Edges ===== -->
+  <!-- clients -> ALB -->
+  <path d="M200 325 L280 380" fill="none" stroke="#3987e5" stroke-width="2" marker-end="url(#ahB)" class="flow"/>
+  <path d="M200 465 L280 470" fill="none" stroke="#3987e5" stroke-width="2" marker-end="url(#ahB)" class="flow"/>
+  <!-- kashier webhook -> ALB  & NAT -> kashier -->
+  <path d="M200 740 C240 700 250 600 280 540" fill="none" stroke="#3987e5" stroke-width="1.5" marker-end="url(#ahB)" class="flow slow"/>
+  <text x="206" y="640" class="edge">webhook</text>
+  <path d="M284 770 L204 770" fill="none" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="212" y="790" class="edge">init session</text>
+  <!-- order -> NAT -->
+  <path d="M560 600 C470 640 480 740 456 760" fill="none" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- ALB -> services -->
+  <path d="M452 340 L556 330" fill="none" stroke="#3987e5" stroke-width="2" marker-end="url(#ahB)" class="flow"/>
+  <path d="M452 460 C500 470 520 520 556 525" fill="none" stroke="#3987e5" stroke-width="2" marker-end="url(#ahB)" class="flow"/>
+  <path d="M452 380 C480 380 470 740 556 745" fill="none" stroke="#3987e5" stroke-width="2" marker-end="url(#ahB)" class="flow"/>
+
+  <!-- services -> data -->
+  <path d="M870 328 L956 328" fill="none" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)"/>
+  <path d="M870 365 L956 400" fill="none" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)"/>
+  <path d="M870 520 L956 415" fill="none" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)"/>
+  <path d="M870 555 L956 545" fill="none" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)"/>
+  <path d="M870 780 L956 778" fill="none" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- workers -> MQ -->
+  <path d="M870 422 C920 430 905 640 956 655" fill="none" stroke="#199e70" stroke-width="2" marker-end="url(#ahA)" class="flow"/>
+  <path d="M870 640 L956 672" fill="none" stroke="#199e70" stroke-width="2" marker-end="url(#ahA)" class="flow"/>
+  <!-- MQ -> analytics & order (consume) -->
+  <path d="M956 705 C915 712 900 740 874 745" fill="none" stroke="#199e70" stroke-width="2" marker-end="url(#ahA)" class="flow"/>
+
+  <!-- CI/CD -->
+  <path d="M200 150 L466 160" fill="none" stroke="#9085e9" stroke-width="2" marker-end="url(#ahV)" class="flow slow"/>
+  <text x="262" y="146" class="edge">push image :sha + :latest</text>
+</svg>

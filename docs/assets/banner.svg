@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-labelledby="t d">
+  <title id="t">QuickBite</title>
+  <desc id="d">QuickBite: a production-grade food-delivery backend with three microservices, deployed on AWS ECS Fargate and load-tested at 643 requests per second.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1117"/>
+      <stop offset="1" stop-color="#111a2b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.82" cy="0.45" r="0.45">
+      <stop offset="0" stop-color="#3987e5" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#3987e5" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#e6edf3" stroke-opacity="0.04"/>
+    </pattern>
+    <style>
+      .sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+      .mono{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+      .flow{stroke-dasharray:6 8;animation:dash 1.4s linear infinite}
+      @keyframes dash{to{stroke-dashoffset:-28}}
+      .pulse{animation:pulse 2.4s ease-in-out infinite;transform-origin:center;transform-box:fill-box}
+      @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+      @media (prefers-reduced-motion: reduce){.flow,.pulse{animation:none}}
+    </style>
+  </defs>
+
+  <rect width="1280" height="360" rx="16" fill="url(#bg)"/>
+  <rect width="1280" height="360" rx="16" fill="url(#grid)"/>
+  <rect width="1280" height="360" rx="16" fill="url(#glow)"/>
+
+  <!-- Title block -->
+  <g class="sans">
+    <text x="64" y="92" fill="#8b949e" font-size="15" font-weight="600" letter-spacing="2.5">DISTRIBUTED BACKEND · AWS · LOAD-TESTED</text>
+    <text x="62" y="160" fill="#e6edf3" font-size="72" font-weight="800" letter-spacing="-2">Quick<tspan fill="#3987e5">Bite</tspan></text>
+    <text x="64" y="200" fill="#c9d1d9" font-size="21">A food-delivery platform backend built from three microservices:</text>
+    <text x="64" y="228" fill="#c9d1d9" font-size="21">region-sharded orders, event-driven analytics, real-time delivery.</text>
+  </g>
+
+  <!-- Stat chips -->
+  <g class="sans">
+    <g transform="translate(64 262)">
+      <rect width="150" height="58" rx="10" fill="#161b22" stroke="#30363d"/>
+      <text x="16" y="27" fill="#e6edf3" font-size="22" font-weight="700">643 <tspan font-size="13" fill="#8b949e" font-weight="500">req/s</tspan></text>
+      <text x="16" y="46" fill="#8b949e" font-size="12">peak throughput</text>
+    </g>
+    <g transform="translate(226 262)">
+      <rect width="150" height="58" rx="10" fill="#161b22" stroke="#30363d"/>
+      <text x="16" y="27" fill="#e6edf3" font-size="22" font-weight="700">140 <tspan font-size="13" fill="#8b949e" font-weight="500">ms</tspan></text>
+      <text x="16" y="46" fill="#8b949e" font-size="12">p95 latency</text>
+    </g>
+    <g transform="translate(388 262)">
+      <rect width="150" height="58" rx="10" fill="#161b22" stroke="#30363d"/>
+      <text x="16" y="27" fill="#e6edf3" font-size="22" font-weight="700">374.4K</text>
+      <text x="16" y="46" fill="#8b949e" font-size="12">requests · 1 failed</text>
+    </g>
+    <g transform="translate(550 262)">
+      <rect width="150" height="58" rx="10" fill="#161b22" stroke="#30363d"/>
+      <text x="16" y="27" fill="#e6edf3" font-size="22" font-weight="700">600+</text>
+      <text x="16" y="46" fill="#8b949e" font-size="12">automated tests</text>
+    </g>
+  </g>
+
+  <!-- Mini topology -->
+  <g class="sans" font-size="13" font-weight="600">
+    <!-- links -->
+    <path d="M960 118 L1000 170" stroke="#3987e5" stroke-width="2" fill="none" class="flow"/>
+    <path d="M960 242 L1000 192" stroke="#d95926" stroke-width="2" fill="none" class="flow"/>
+    <path d="M1052 180 L1080 180" stroke="#9085e9" stroke-width="2" fill="none" class="flow"/>
+    <path d="M880 144 L880 216" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="3 5" fill="none"/>
+
+    <!-- core -->
+    <g transform="translate(800 92)">
+      <rect width="160" height="52" rx="12" fill="#161b22" stroke="#3987e5" stroke-width="1.5"/>
+      <circle cx="22" cy="26" r="6" fill="#3987e5" class="pulse"/>
+      <text x="38" y="23" fill="#e6edf3">core-service</text>
+      <text x="38" y="40" fill="#8b949e" font-weight="400" font-size="11">Node · Postgres/PostGIS</text>
+    </g>
+    <!-- order -->
+    <g transform="translate(800 216)">
+      <rect width="160" height="52" rx="12" fill="#161b22" stroke="#d95926" stroke-width="1.5"/>
+      <circle cx="22" cy="26" r="6" fill="#d95926" class="pulse" style="animation-delay:.8s"/>
+      <text x="38" y="23" fill="#e6edf3">order-service</text>
+      <text x="38" y="40" fill="#8b949e" font-weight="400" font-size="11">Node · sharded Postgres</text>
+    </g>
+    <!-- broker -->
+    <g transform="translate(1000 156)">
+      <rect width="52" height="48" rx="10" fill="#161b22" stroke="#30363d"/>
+      <text x="26" y="23" fill="#e6edf3" text-anchor="middle" font-size="11">MQ</text>
+      <text x="26" y="37" fill="#8b949e" text-anchor="middle" font-size="9" font-weight="400">events</text>
+    </g>
+    <!-- analytics -->
+    <g transform="translate(1080 154)">
+      <rect width="160" height="52" rx="12" fill="#161b22" stroke="#9085e9" stroke-width="1.5"/>
+      <circle cx="22" cy="26" r="6" fill="#9085e9" class="pulse" style="animation-delay:1.6s"/>
+      <text x="38" y="23" fill="#e6edf3">analytics</text>
+      <text x="38" y="40" fill="#8b949e" font-weight="400" font-size="11">Go · MongoDB</text>
+    </g>
+    <text x="888" y="184" fill="#8b949e" font-size="10" font-weight="400">sync</text>
+  </g>
+
+  <!-- Tech line -->
+  <text x="800" y="320" class="mono" fill="#8b949e" font-size="12">TypeScript · Go · PostgreSQL · Redis · RabbitMQ</text>
+  <text x="800" y="338" class="mono" fill="#8b949e" font-size="12">MongoDB · Docker · ECS Fargate · GitHub Actions · k6</text>
+</svg>
